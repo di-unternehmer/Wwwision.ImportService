@@ -173,7 +173,7 @@ final class ContentRepositoryTarget implements DataTargetInterface
     public function computeDataChanges(DataRecords $records, bool $forceUpdates, bool $skipAddedRecords, bool $skipRemovedRecords): ChangeSet
     {
         // We use the "lastPublicationDateTime" field of NodeData because "lastModificationDateTime" is updated by a Doctrine hook and can't be set manually:
-        $query = $this->doctrineEntityManager->createQuery('SELECT n.identifier, n.lastPublicationDateTime, n.hidden FROM ' . NodeData::class . ' n WHERE n.nodeType IN (:nodeTypeNames)');
+        $query = $this->doctrineEntityManager->createQuery('SELECT n.identifier, n.lastPublicationDateTime, n.hidden FROM ' . NodeData::class . ' n WHERE n.nodeType IN (:nodeTypeNames) AND n.identifier LIKE \'' . $this->idPrefix . '%\'');
         $query->setParameters([
             'nodeTypeNames' => $this->affectedNodeTypeNames(),
         ]);
@@ -306,12 +306,12 @@ final class ContentRepositoryTarget implements DataTargetInterface
     public function removeAll(): int
     {
         if ($this->rootNodePath !== null) {
-            $query = $this->doctrineEntityManager->createQuery('SELECT n FROM ' . NodeData::class . ' n WHERE n.path LIKE :pathPrefix AND n.nodeType IN (:nodeTypeNames)')->setParameters([
+            $query = $this->doctrineEntityManager->createQuery('SELECT n FROM ' . NodeData::class . ' n WHERE n.path LIKE :pathPrefix AND n.identifier LIKE \'' . $this->idPrefix . '%\' AND n.nodeType IN (:nodeTypeNames)')->setParameters([
                 'pathPrefix' => $this->rootNodePath . '/%',
                 'nodeTypeNames' => $this->affectedNodeTypeNames(),
             ]);
         } else {
-            $query = $this->doctrineEntityManager->createQuery('SELECT n FROM ' . NodeData::class . ' n WHERE n.nodeType IN (:nodeTypeNames)')->setParameters([
+            $query = $this->doctrineEntityManager->createQuery('SELECT n FROM ' . NodeData::class . ' n WHERE n.identifier LIKE \'' . $this->idPrefix . '%\' AND n.nodeType IN (:nodeTypeNames)')->setParameters([
                 'nodeTypeNames' => $this->affectedNodeTypeNames(),
             ]);
         }
@@ -486,3 +486,4 @@ final class ContentRepositoryTarget implements DataTargetInterface
     }
 
 }
+
