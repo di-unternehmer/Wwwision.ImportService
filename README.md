@@ -55,6 +55,6 @@ Which should produce the output
 
 ```bash
 Validating Settings configuration on path Wwwision.ImportService
- 
+
 All Valid!
 ```
