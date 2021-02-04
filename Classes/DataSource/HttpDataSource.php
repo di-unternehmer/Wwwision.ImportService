@@ -2,14 +2,15 @@
 declare(strict_types=1);
 namespace Wwwision\ImportService\DataSource;
 
+use GuzzleHttp\Psr7\ServerRequest;
+use Neos\Flow\Http\Cookie;
 use Wwwision\ImportService\ImportServiceException;
 use Wwwision\ImportService\OptionsSchema;
 use Wwwision\ImportService\ValueObject\DataRecords;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Client\Browser;
 use Neos\Flow\Http\Client\CurlEngineException;
-use Neos\Flow\Http\Request;
-use Neos\Flow\Http\Uri;
+use Wwwision\ImportService\Http\Uri;
 
 /**
  * HTTP Data Source that allows to import records from some HTTP endpoint
@@ -64,9 +65,7 @@ final class HttpDataSource implements DataSourceInterface
     public function load(): DataRecords
     {
         try {
-            $request = Request::create($this->endpoint);
-            /** @noinspection PhpDeprecationInspection */
-            $request->setHeader('Accept', 'application/json');
+            $request = new ServerRequest('GET', $this->endpoint);
             $response = $this->httpClient->sendRequest($request);
         } /** @noinspection PhpRedundantCatchClauseInspection */ catch (CurlEngineException $exception) {
             throw new ImportServiceException(sprintf('Request failed: %s.', $exception->getMessage()), 15102227415, $exception);
@@ -76,11 +75,14 @@ final class HttpDataSource implements DataSourceInterface
             throw new ImportServiceException(sprintf('Unexpected response status code %s on endpoint %s.', $response->getStatusCode(), $this->endpoint), 15102213263);
         }
         $data = json_decode($response->getBody()->getContents(), true);
+        if (!$data) {
+            throw new ImportServiceException(sprintf('Unexpected response body or malformed JSON on endpoint %s.', $this->endpoint), 15203231319);
+        }
 
         if (!\is_array($data)) {
             throw new ImportServiceException(sprintf('Unexpected response body or malformed JSON on endpoint %s.', $this->endpoint), 15203231319);
         }
-        if (\count($data) === 0) {
+        if (!is_array( $data) || \count($data) === 0) {
             throw new ImportServiceException(sprintf('The Http endpoint %s returned an empty result', $this->endpoint), 15203231381);
         }
         return DataRecords::fromRawArray($data, $this->idAttributeName, $this->versionAttributeName);
